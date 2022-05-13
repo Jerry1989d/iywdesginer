@@ -1,0 +1,24 @@
+{
+  "name": "iywdesigner",
+  "version": "1.0.1",
+  "description": "a image tool",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jerry1989d/iywdesginer.git"
+  },
+  "keywords": [
+    "canvas",
+    "editor",
+    "design"
+  ],
+  "author": "jerry",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jerry1989d/iywdesginer/issues"
+  },
+  "homepage": "https://github.com/Jerry1989d/iywdesginer#readme"
+}

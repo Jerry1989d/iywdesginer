@@ -1,0 +1,378 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+html, body, .container, #app{
+    height: 100%;
+    width: 100%;
+}
+#editor .color-piece{
+    position: absolute;
+    left: 0;
+    top: 0;
+    user-select: none;
+}
+#editor .color-ctl, #editor .image-ctl{
+    position: absolute;
+    /*border: 1px solid #2fa8ec;*/
+    left: 0;
+    top: 0;
+    user-select: none
+}
+
+#editor .bladeImg{
+    user-select: none;
+    width: 100%;
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    top: 0;
+}
+#elementsParent{
+    user-select: none;
+    width: 600px;
+    height: 600px;
+    overflow: hidden;
+    position: relative;
+}
+#app{
+    overflow: hidden;
+    position: relative;
+}
+#elementsParent img, #elementsParent div{
+    width: 100%;
+    position: absolute;
+}
+.editor-box .editor-ctrl{
+    /*width: 600px;*/
+    /*height: 600px;*/
+}
+.editor-box .editor-ctrl span{
+    position: absolute;
+}
+.editor-box {
+    user-select: none;
+    height: 600px;
+    width: 600px;
+    margin: 100px auto;
+    position: relative;
+    box-shadow: 0 0 10px rgb(199 196 196);
+    border-radius: 4px;
+
+}
+.dialog-wrap {
+    width: 600px;
+    height: 600px;
+    margin: 0 auto;
+    border: 1px solid blue;
+    overflow: hidden;
+}
+.dialog-wrap img {
+    display: inline-block;
+    z-index: 1;
+}
+#move {
+    left: 0;
+    position: absolute;
+    /* display: none; */
+    top: 0;
+    text-align: center;
+    width: 600px;
+    height: 600px;
+    z-index: 11;
+    background-color: transparent;
+    border: 2px solid #2858f8;
+}
+#move:hover{
+    cursor: move;
+}
+.points-box{
+    position: relative;
+}
+.editor-ctrl span {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50px;
+    border: 1px solid #1593ff;
+    background-color: white;
+    z-index: 99;
+}
+.editor-ctrl .top-left {
+    cursor: se-resize;
+    left: -10px;
+    top: -12px;
+}
+.editor-ctrl .top {
+    left: 50%;
+    top: -12px;
+    cursor: s-resize;
+}
+.editor-ctrl .top-right {
+    cursor: pointer;
+    left: 100%;
+    top: -12px;
+    width: 10px;
+    margin-left: -8px;
+}
+.editor-ctrl .top-right:after{
+    content: 'x';
+    color: white;
+    display: inline-block;
+    position: absolute;
+    top: -1px;
+    line-height: 17px;
+    left: -4px;
+    width: 20px;
+    font-weight: 600;
+    height: 20px;
+    background-color: red;
+    border-radius: 50%;
+}
+.editor-ctrl .left {
+    top: 50%;
+    left: -10px;
+    cursor: ew-resize;
+}
+.editor-ctrl .left-bottom {
+    left: -12px;
+    top: 100%;
+    margin-top: -10px;
+    cursor: nesw-resize;
+}
+.editor-ctrl .right {
+    top: 50%;
+    right: -12px;
+    cursor: ew-resize;
+}
+.editor-ctrl .bottom-right {
+    cursor: se-resize;
+    top: 100%;
+    right: -10px;
+    margin-top: -10px;
+}
+.editor-ctrl .bottom {
+    cursor: s-resize;
+    top: 100%;
+    left: 50%;
+    margin-top: -10px;
+}
+#move:hover {
+    cursor: pointer;
+}
+.transform-content{
+    border-radius: 4px;
+    /* display: none; */
+    overflow: hidden;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -300px;
+    margin-top: -300px;
+    text-align: center;
+    width: 600px;
+    height: 600px;
+    z-index: 10;
+    background-color: white;
+}
+#defaultImg{
+    width: 100%;
+    position: absolute;
+    z-index: 1;
+    left: 0;
+}
+#defaultSample{
+    position: absolute;
+    width: 100%;
+    z-index: 2;
+    left: 0;
+}
+#previewBox{
+    width: 280px;
+    height: 280px;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px #bbbbbb;
+}
+#previewBox img, #element-for-export img{
+    user-select: none;
+    pointer-events: none;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+#element-for-export{
+    position: absolute;
+    z-index: -10;
+    opacity: 0;
+}
+
+#compositeCan {
+    z-index: -90;
+    width: 600px;
+    height: 600px;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+}
+#compositeCan .single-export-container{
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: block;
+}
+#previewBox .preview-container,#element-for-export .preview-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+#previewBox .preview-container .color-preview ,#element-for-export .preview-container .color-preview{
+    position: absolute;
+}
+#rotationCtl{
+    position: absolute;
+    cursor: pointer;
+    border: 1px solid #1593ff;
+    box-shadow: 0 0 10px #b4b4b4;
+    border-radius: 50%;
+    bottom: -58px;
+    left: 50%;
+    margin-left: -3px;
+    width: 26px;
+    height: 26px;
+    z-index: 25;
+}
+#rotationCtl:after{
+    content: 'R';
+    text-align: center;
+    display: block;
+}
+.iyw-dialog{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 20;
+   background-color: #00000070;
+}
+.iyw-dialog .dialog-body{
+    max-width: 480px;
+    position: relative;
+    padding: 20px;
+    display: block;
+    margin: 20% auto 0 auto;
+    border-radius: 4px;
+    background-color: white;
+    /*box-shadow: 0 0 4px #eeeeee;*/
+}
+.iyw-dialog .dialog-body img{
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.iyw-dialog .dialog-body .clip-confirm{
+    padding: 8px 18px;
+    background-color: #2858f8;
+    color: white;
+    text-align: center;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.iyw-dialog .dialog-body .clip-cancel{
+    padding: 8px 18px;
+    border: 1px solid #eeeeee;
+    background-color:white;
+    color: #2858f8;
+    text-align: center;
+    border-radius: 4px;
+    cursor: pointer;
+    margin: 0 10px;
+}
+.iyw-dialog .dialog-body .clip-footer{
+    text-align: right;
+    padding: 30px 0 10px 0;
+
+}
+.loading-box{
+    background-color: white;
+    width: 100%;
+    height: 100%;
+}
+.loader {
+    position: relative;
+    width: 1.5em;
+    height: 1.5em;
+    transform: rotate(165deg);
+}
+.loader:before, .loader:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    width: 0.3em;
+    height: 0.3em;
+    border-radius: 0.25em;
+    transform: translate(-50%, -50%);
+}
+.loader:before {
+    animation: before 2s infinite;
+}
+.loader:after {
+    animation: after 2s infinite;
+}
+
+@keyframes before {
+    0% {
+        width: 0.5em;
+        box-shadow: 1em -0.5em #2858f8, -1em 0.5em #2858f8;
+    }
+    35% {
+        width: 1.5em;
+        box-shadow: 0 -0.5em #2858f8, 0 0.5em #2858f8;
+    }
+    70% {
+        width: 0.5em;
+        box-shadow: -1em -0.5em #2858f8, 1em 0.5em #2858f8;
+    }
+    100% {
+        box-shadow: 1em -0.5em #2858f8, -1em 0.5em #2858f8;
+    }
+}
+@keyframes after {
+    0% {
+        height: 0.5em;
+        box-shadow: 0.5em 1em rgba(40, 88, 248, 0.6), -0.5em -1em rgba(40, 88, 248, 0.6);
+    }
+    35% {
+        height: 1.5em;
+        box-shadow: 0.5em 0 rgba(40, 88, 248, 0.6), -0.5em 0 rgba(40, 88, 248, 0.6);
+    }
+    70% {
+        height: 0.5em;
+        box-shadow: 0.5em -1em rgba(40, 88, 248, 0.6), -0.5em 1em rgba(40, 88, 248, 0.6);
+    }
+    100% {
+        box-shadow: 0.5em 1em rgba(40, 88, 248, 0.6), -0.5em -1em rgba(40, 88, 248, 0.6);
+    }
+}
+/**
+ * Attempt to center the whole thing!
+ */
+html,
+body {
+    height: 100%;
+}
+
+.loader {
+    position: absolute;
+    top: calc(50% - 1.25em);
+    left: calc(50% - 1.25em);
+}
