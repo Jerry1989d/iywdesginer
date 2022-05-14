@@ -27,6 +27,14 @@ vue 环境安装只需要引入本Demo直接输如命令安装即可
 
 3D功能需要引入 [Three.js](https://github.com/mrdoob/three.js/)
 
+设计器包单独加载 
+
+````javascript
+
+npm i iywdesigner
+
+````
+
 引入用于合成的插件 
 ```html
 <script src="https://cdn.bootcss.com/dom-to-image/2.2.0/dom-to-image.js"></script>
@@ -169,20 +177,28 @@ this.editorObj.useCropper(Cropper,'circle');
 接受一个颜色值，改变当前色块的颜色
 ```javascript
 let color = 'red';
-this.editorObj.setColor(color);
+editorObj.setColor(color);
 ```
 
 
 ### blade.set(Number)
 设置刀片的索引，可返回editor对象，可以在点击样板前先设置当前刀片的索引之后再设置样板,默认值为0
 ```javascript
-this.editorObj.blade.set(1).setTemp(sampleInfo);
+editorObj.blade.set(1).setTemp(sampleInfo);
 ```
 * Number : ``Number`` 刀片下标
 
 ### blade.get()
 返回当前刀片的索引
 ```javascript
-this.editorObj.blade.get();
+editorObj.blade.get();
 ```
 * return : ``Number`` 刀片下标
+
+
+### getPreviewDom()
+获取预览区的DOM，用于查看大图渲染
+```javascript
+editorObj.getPreviewDom();
+```
+* return : ``String`` html dom

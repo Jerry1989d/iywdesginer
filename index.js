@@ -3,6 +3,7 @@
 const getLocalStornage = (name) => {
     return window.localStorage.getItem(name);
 };
+// 判断是否支持webp格式的图片
 const util = {
     isSupportWebp: () => {
         const isSupportWebp = getLocalStornage('isSupportWebp');
@@ -257,6 +258,7 @@ class CanvasDistort {
     };
 }
 
+// 2D 点位
 class Point2D {
     constructor(x, y, u, v) {
         this.x = x;
@@ -272,6 +274,7 @@ class Point2D {
 
 const DRAW_IMAGE_EXTEND_EX = 3;
 
+// 2d 画图
 class Vert2D {
     constructor(p0, p1, p2) {
         this.p0 = p0;
@@ -1052,9 +1055,71 @@ const stringToArray = (arr, canvasOptions) => {
 
 // 历史记录管理
 class HistoryManager {
+    constructor() {
+        this.HISTORY = {
+            color:{
 
+            },
+            pattern:{
+
+            },
+            text:{
+
+            }
+        }
+    }
+    find(obj){
+        let type = this.getObjType(obj); // 获取当前对象类型
+        let id = obj.getAttribute(type + 'id'); // id是由当前对象类型加id拼接的。
+        if(!this.HISTORY[type][type+id]) return [];
+        return this.HISTORY[type][type+id][this.HISTORY[type][type+id].length - 1];
+    }
+    delete(obj){
+
+    }
+    add(obj){
+        let type = this.getObjType(obj);
+        let info = this.getInfo(obj, type);
+        // 先判断记录里有没有和这个对象的记录,
+        let key = type+info.id;
+        console.log(type,info,key)
+        if(!this.HISTORY[type][key]){
+            Object.assign(this.HISTORY[type],{[key]: []});
+        }
+
+        // 如果超过10条则需要删除第一条
+        if(this.HISTORY[type][key] && this.HISTORY[type][key].length === 10){
+            this.HISTORY[type][key].shift();
+        }
+        this.HISTORY[type][key].push(info);
+        console.log(this.HISTORY[type][key])
+
+    }
+    // 获取要存储的信息
+    getInfo(obj, type){
+        const info = {
+            type: type,
+            id: obj.getAttribute('colorid') || obj.getAttribute('patternid'),
+            width: obj.clientWidth,
+            height: obj.clientHeight,
+            left: obj.offsetLeft,
+            top: obj.offsetTop,
+            transform: obj.style.transform,
+            zIndex: obj.style.zIndex,
+        };
+        if(type === 'pattern'){
+            info.src = obj.src;
+        }
+        if(type === 'color'){
+            info.colorType = obj.getAttribute('colortype');
+        }
+        return info;
+    }
+    // 获取当前对象的类型
+    getObjType(obj){
+        return obj.getAttribute('data-type')
+    }
 }
-
 const point2D = Point2D;
 const vert2D = Vert2D;
 const mesh2D = Mesh2D;
@@ -1086,8 +1151,8 @@ export default class IYWDesigner {
         this.disY = null;
         this.currentAction = ''; //
         this.cropper = null; //裁剪插件
-        this.previewImgContainer = null,
-            this.onMoveObj = null; // 当前操作的对象
+        this.previewImgContainer = null;
+        this.onMoveObj = null; // 当前操作的对象
         this.defaultSample = null; // 样版信息
         this.isDrag = false; // 控制图片拖拽
         this.isHold = false; // 控制图片旋转
@@ -1095,13 +1160,13 @@ export default class IYWDesigner {
         this.isBottomHold = false;
         this.isLeftpHold = false;
         this.isRightpHold = false;
+        this.historyManage = new HistoryManager();
         this.angel = 0; // 旋转的角度
         this.objDefParams = {};
         this.defaultLeft = 0; // 编辑器框的位置
         this.defaultTop = 0;
         this.controlElIndex = null; // 矩阵用
         this.elementsParent = null; // 设计器内部所有可操作元素的父类
-        this.matrix = [1, 0, 0, 1, 0, 0]; // 默认矩阵
         this.layers = [];
         this.maxItemNum = maxItemNum; // 设计区内元素的最大长度
         this.pointA = {
@@ -1152,14 +1217,19 @@ export default class IYWDesigner {
             find: () => {
 
             },
-            getCurrentBlade: () => {
-                return this.defaultSample.baseImgInfoList[this.currentBlade].bladeInfoList[this.currentBlade]
+            getCurrentBlade: (badeIndex, colorIndex) => {
+                return this.defaultSample.baseImgInfoList[this.currentBlade].bladeInfoList[colorIndex]
             }
         }
         // 要生成的操作节点
         this.framePoints = [
             "top", "top-left", "top-right", "left", "left-bottom", "bottom", "bottom-right", "right"
         ]
+    }
+
+    // 获取预览区的节点
+    getPreviewDom(){
+        return this.previewImgContainer.innerHTML;
     }
 
     showFrame() {
@@ -1178,6 +1248,8 @@ export default class IYWDesigner {
     // 生成单个合成div
     createExportSingle() {
         let canvas = this.createElement({type: 'div', id: 'compositeCan'});
+        canvas.style.width = this.exportSize + 'px';
+        canvas.style.height = this.exportSize + 'px';
         this.insertElement(document.getElementsByTagName('body')[0], canvas);
     }
 
@@ -1269,8 +1341,6 @@ export default class IYWDesigner {
     // 保存对象操作后的最后坐标和尺寸
     saveLatestInfo() {
         const _this = this;
-        // this.pointA.x = this.onMoveObj.offsetLeft;
-        // this.pointA.y = this.onMoveObj.offsetTop;
         _this.objDefParams.left = _this.onMoveObj.offsetLeft; // 存储下来为自由变换对象宽高
         _this.objDefParams.top = _this.onMoveObj.offsetTop;
         _this.objDefParams.width = _this.onMoveObj.clientWidth; // 存储下来为自由变换对象宽高
@@ -1316,20 +1386,7 @@ export default class IYWDesigner {
 
             // 检查有没有旋转
             if(_this.currentAction === 'rotate'){
-                // 找到合成单图的元素
-                let singleComposite = document.getElementById('compositeCan');
-                let singleCompBox = this.findElementByClass(singleComposite,'single-export-container');
-                let singleCompImg = this.findElementByClass(singleCompBox,'single-export');
-
-                // 找到预览区域的图获取SRC赋值给单图片合成
-                let previewImg = this.findItemByAttr(this.previewImgContainer, 'pattern');
-                singleCompImg.src = previewImg.src;
-
-                // 把编辑区操后的旋转角度给合成单图的图片
-                previewImg.style.transform = this.onMoveObj.style.transform;
-                singleCompImg.style.transform = this.onMoveObj.style.transform;
-
-
+                _this.genImgForAction('rotate');
             }
             // this.frame.style.pointerEvents = 'none';
         }
@@ -1406,9 +1463,15 @@ export default class IYWDesigner {
                 stopMove(e);
             }
             _this.editorBox.onmouseup = function (e) {
-                _this.loadingPreview.style.display = 'block';
-                _this.asyncPosition(_this.previewBox);
-
+                // 获取上一步的操作记录和现在的信息匹配，如果没有发生改变则不执行同步动作
+                let lastStep = _this.historyManage.find(_this.onMoveObj);
+                let type = _this.getElementType();
+                let currentData = _this.historyManage.getInfo(_this.onMoveObj,type);
+                _this.selectedInfo.info = _this.createObjInfo();
+                if(JSON.stringify(lastStep) != JSON.stringify(currentData)){
+                    _this.loadingPreview.style.display = 'block';
+                    _this.asyncPosition(_this.previewBox);
+                }
             }
         };
     }
@@ -1446,7 +1509,6 @@ export default class IYWDesigner {
             const move = this.createElement({type: 'div', id: 'move'});
             this.insertElement(EDITOR, move);
             this.frame = move;
-            // this.frame.style.pointerEvents = 'none';
 
             // 创建设计器内部所有可操作元素的父类,所有添加的图片和色块都会放入到这个元素下面
             this.elementsParent = this.createElement({type: 'div', id: 'elementsParent'});
@@ -1550,26 +1612,30 @@ export default class IYWDesigner {
     //  删除元素
     delElement() {
         if (!this.onMoveObj) return;
+        let objType = this.onMoveObj.getAttribute('data-type');
         let colorId = this.onMoveObj.getAttribute('colorId');
-        let artId = this.onMoveObj.className === 'editImage';
-        console.log(this.onMoveObj, '操作的对象')
         // 删除色块
-        if (colorId) {
+        if (objType === 'color') {
             this.delColorPiece(colorId);
             // 这里不能用强等，因为data里的是数字类型，元素的自定义属性取出来是字符串
             this.colorConfig.data = this.colorConfig.data.filter(item => item.colorId != colorId);
         }
         // 删除图片
-        if (artId) {
+        if (objType === 'pattern') {
             this.findElementByClass(this.elementsParent, 'editImage').remove();
-            this.findElementByClass(this.editorBox, 'image-ctl').remove();
+            this.findElementByClass(this.editorBox, 'pattern-ctl').remove();
             this.findItemByAttr(this.findElementByClass(this.previewBox, 'preview-container'), 'pattern').remove();
+        }
+        if(objType === 'text'){
+            this.delText();
         }
         // 删除后为了避免操作框还停留在页面上，所以要隐藏掉
         this.hideFrame();
         // 删除元素后置空当前操作的对象
         this.onMoveObj = null;
-        console.log(this.onMoveObj, '当前的操作对象')
+    }
+    delText(){
+        this.findElementByClass(this.elementsParent, 'edit-text').remove();
     }
 
     // 老版坐标点数转换
@@ -1610,7 +1676,6 @@ export default class IYWDesigner {
 
     // 合成图片,每次图片的编辑都会同步坐标合成单个图片
     async compositeImage({left, top, width, height, zIndex, colorId, transform}) {
-
         // 先检查页面有没有供合成的div；
         let canvas = document.getElementById('compositeCan');
         let imgForRender = this.findElementByClass(canvas, 'single-export');
@@ -1636,14 +1701,15 @@ export default class IYWDesigner {
             this.insertElement(canvas, containerForRender);
         }
         setStyle();
+
     }
 
     // 根据两个版本的坐标点返回坐标，和贴图区域大小
-    getSliceSize(data,key='pathPoints') {
+    getSliceSize(data,key='pathPoints',colorIndex) {
         let width, height, left, top;
         // 根据转后的坐标得到大小和位置
         if (data.newVersion) {
-            let res = this.getRectCenter(this.blade.getCurrentBlade()[key]);
+            let res = this.getRectCenter(this.blade.getCurrentBlade(this.currentBlade,colorIndex)[key]);
             width = res.width;
             height = res.height;
             left = res.left;
@@ -1660,29 +1726,70 @@ export default class IYWDesigner {
             width, height, left, top
         }
     }
-
-    // 获取切图坐标和尺寸
-    getSlicePos(){
-       let transferPos =  this.getRectCenter(this.blade.getCurrentBlade().clipPath);
-
+    // 根据当前元素类型ID找预览区的元素
+    findItemByTypeId(id){
+        let type = this.getElementType();
+        const elemnts = Array.from(this.previewImgContainer.childNodes);
+        return elemnts.find(item => item.getAttribute(type+'id') == id);
     }
-    // 根据色块ID找元素
-    findItemByColorId(id){
-        const elemnts = Array.from(this.previewImgContainer.childNodes)
-        return elemnts.find(item => item.getAttribute('colorid') == id);
+
+    // 根据当前元素类型ID找导出图的元素
+    findItemByTypeIdInExport(id){
+        let type = this.getElementType();
+        const elemnts = Array.from(this.findElementByClass(this.exportObj, 'preview-container').childNodes);
+        return elemnts.find(item => item.getAttribute(type+'id') == id);
     }
-    // 合成图片
-    async doComposite(imgInfo) {
+    // 合成图片,colorLen means the amount of img for one sample
+    async doComposite(imgInfo, colorIndex,colorLen) {
+        console.log(colorIndex,'colorIndexcolorIndexcolorIndexcolorIndex')
         const currentObjType = this.getElementType();
         if (currentObjType === 'pattern' || currentObjType === 'color') {
             // 导出图的DIV
             let exportParent = this.findElementByClass(document.getElementById('element-for-export'), 'preview-container');
             // 预览区的图片，因为图片只有一张，所以可以不用根据ID找
             let previewImg = this.findItemByAttr(this.previewImgContainer, currentObjType);
+            // 根据当前操作对象的类型来找导出的DIV里面的所元素
+            let exportImg = this.findItemByAttr(exportParent, currentObjType);
+            // 如果当前预览区的图片没有ID 则根据 贴图区域的数量下标给值
+            let layerId = currentObjType + colorIndex;
 
             // 如果是色块的预览区 要根据colorId找到当前操作的元素
             if(currentObjType === 'color'){
-                previewImg = this.findItemByColorId(this.onMoveObj.getAttribute('colorId'));
+                previewImg = this.findItemByTypeId(this.onMoveObj.getAttribute('colorId'));
+            }
+            if(!previewImg.getAttribute('layerid')){
+                previewImg.setAttribute('layerid',layerId);
+            }
+            // 如果是多刀片的话，可以插入多个图
+            let isExist = Array.from(this.previewImgContainer.childNodes).find(item => item.getAttribute('layerid') == layerId);
+            if (colorIndex > 0 && !isExist){
+                previewImg = this.createElement({type: 'img'});
+                previewImg.setAttribute('imgtype',currentObjType);
+                previewImg.setAttribute('layerid', layerId);
+                this.insertElement(this.previewImgContainer, previewImg);
+            }
+            if(isExist){
+                previewImg = isExist;
+            }
+
+            // 这里是给导出效果图的DIV用的
+            let isExistExport = Array.from(exportParent.childNodes).find(item => item.getAttribute('layerid') == layerId);
+            if (colorIndex > 0 && !isExistExport){
+                exportImg = this.createElement({type: 'img'});
+                exportImg.setAttribute('imgtype',currentObjType);
+                exportImg.setAttribute('layerid', layerId);
+                this.insertElement(exportParent, exportImg);
+            }
+            if(currentObjType === 'color'){
+                exportImg = this.findItemByTypeIdInExport(this.onMoveObj.getAttribute('colorId'));
+            }
+            // 导出图的DIV 也要这样操作一遍
+            if(!exportImg.getAttribute('layerid')){
+                exportImg.setAttribute('layerid',layerId);
+            }
+
+            if(isExistExport){
+                exportImg = isExistExport;
             }
             let originImg = this.onMoveObj.getAttribute('src');
 
@@ -1690,18 +1797,16 @@ export default class IYWDesigner {
             const {clientWidth, clientHeight, offsetLeft, offsetTop} = this.onMoveObj;
 
             // 数据格式转换，转换预览版和体验版的坐标
-            let transferPos = this.getDesignSizeByPoints(0, 'pathPoints');// 先拿到坐标点的集合
+            let transferPos = this.getDesignSizeByPoints(colorIndex, 'pathPoints');// 先拿到坐标点的集合
 
             // 拿到切图的尺寸和坐标，切图和 贴图是两个不同的坐标
-            const clipInfo = this.getSliceSize(transferPos,'clipPath');
-            // 拿到贴图坐标
-            const {width, height, left, top} = this.getSliceSize(transferPos);
+            const clipInfo = this.getSliceSize(transferPos,'clipPath',colorIndex);
 
             // 实例化透视以及角度算法的canvas
-            const CanvasManager = new canvasManager({width: this.canvasSize, height: this.canvasSize})
+            const CanvasManager = new canvasManager({width: this.exportSize, height: this.exportSize})
 
             // 贴图坐标转换
-            const canvasArea = stringToArray(transferPos.data, {width: this.canvasSize, height: this.canvasSize});
+            const canvasArea = stringToArray(transferPos.data, {width: this.exportSize, height: this.exportSize});
 
             // 创建一个canvas用来合成第一张图
             const {can, context} = this.createCan();
@@ -1711,15 +1816,12 @@ export default class IYWDesigner {
             can.height = clipInfo.height;
 
             const imgForOrigin = new Image();
-            // 根据当前操作对象的类型来找导出的DIV里面的所元素
-            const exportImg = this.findItemByAttr(exportParent, currentObjType);
-            // console.log(exportImg, exportParent, currentObjType, '找到exportDiv 元素');
             imgForOrigin.src = originImg;
+            context.translate(offsetLeft - (this.exportSize - can.width) /2 + (this.exportSize - this.canvasSize) / 2 ,  offsetTop - (this.exportSize - can.height) / 2 + + (this.exportSize - this.canvasSize) / 2)
             // 设置图片允许跨域
             imgForOrigin.setAttribute("crossOrigin", 'Anonymous');
             // 图片在画布的大小和位置
-            context.translate(offsetLeft - (this.canvasSize - can.width) /2,  offsetTop - (this.canvasSize - can.height) / 2);
-            // context.rotate()
+
             imgForOrigin.onload = async () => {
                 context.drawImage(imgForOrigin, 0, 0, clientWidth, clientHeight);
                 originSrc = can.toDataURL('image/webp', 1);
@@ -1740,7 +1842,9 @@ export default class IYWDesigner {
                 exportImg.style.left = 0 + 'px';
                 exportImg.style.top = 0 + 'px';
                 exportImg.style.zIndex = imgInfo.zIndex;
-                this.loadingPreview.style.display = 'none';
+                setTimeout(() => {
+                    this.loadingPreview.style.display = 'none';
+                },200)
             }
         }
     }
@@ -1769,6 +1873,9 @@ export default class IYWDesigner {
             zoom: '',
             zIndex: '',
             transform: '',
+            innerText: '',
+            textAlign: '',
+            color: ''
         }
         // 计算出坐标值在编辑区的比例
         moved.left = offsetLeft / editorW * previewWidth + 'px';
@@ -1778,12 +1885,26 @@ export default class IYWDesigner {
         moved.zIndex = this.onMoveObj.style.zIndex;
         moved.colorId = this.onMoveObj.getAttribute('colorid') || '';
         moved.transform = this.onMoveObj.style.transform;
+        moved.innerText = this.onMoveObj.innerText;
+        moved.textAlign = this.onMoveObj.style.textAlign;
+        moved.color = this.onMoveObj.style.color;
         // moved.transform = 'rotateX(33deg) rotateY(17deg) rotateZ(349deg)';
         return moved;
     }
+    // 找到预览区的指定元素 @type 为元素的类型，支持3种， color,patter,text
+    findItemFromPreview(type){
+        console.log()
+        const currentObj = this.onMoveObj; // 当前操作的元素
+        const id = currentObj.getAttribute(type+'id'); // 根据类型找到相应的ID
+        return this.findItemByTypeId(id);
+    }
+    // 找到该类型元素的控制器
+    findCtrFromEditBox(type, id){
+        return Array.from(this.editorBox.childNodes).find(item => item.getAttribute(type+'id') === id)
+    }
     // 元素操作后同步到预览区域 传入目标，比如预览区或者合成区
     asyncPosition(target) {
-    // console.log(target, "同步坐标",this.onMoveObj)
+      // if(this.getElementType() ==='color') return;
         if (!this.onMoveObj) return;
         const previewBox = this.findElementByClass(target, 'preview-container');
         previewBox.style.perspective = '1200px';
@@ -1793,32 +1914,23 @@ export default class IYWDesigner {
         const previewWidth = target.offsetWidth;
         let {offsetLeft, offsetTop, clientWidth, clientHeight} = this.onMoveObj; // 获取当前操作对象的x,y
 
-
-        // 找到预览区的图片和色块
-        let colorPieces = Array.from(previewBox.childNodes).filter(item => item.className === 'color-preview');
-        let _image = this.findItemByAttr(previewBox, 'pattern');
-
-        // 匹配预览区和编辑区相同colorID的色块 进行同步坐标和尺寸
-        let _color = colorPieces.find(item => item.getAttribute('colorid') == this.onMoveObj.getAttribute('colorid'));
         const targetType = this.getElementType(); // 判断当前操作的对象是图片还是色块
 
-        // 获取当前要转化坐标的对象
-        let _obj = targetType === 'pattern' ? _image : _color;
+        // 根据当前元素类型找在预览区找到元素
+        let _obj = this.findItemFromPreview(targetType);
         // console.log(_obj,'获取当前要转化坐标的对象', targetType, this.onMoveObj.getAttribute('colorid'))
-        if (!_obj) return;
-        let currentColorCtl = null;
         let {left, top, width, height, zIndex, colorId, transform} = this.getFitSizeByTarget(previewWidth);
+        let currentObjId = this.onMoveObj.getAttribute(targetType +'id');
+        let currentColorCtl = this.findCtrFromEditBox(targetType, currentObjId);
+        console.log('找到控制器', currentColorCtl)
         let imgInfo = {
             zIndex: this.onMoveObj.style.zIndex,
             transform: this.onMoveObj.style.transform,
         }
         // 这里使用转换后的坐标和尺寸
         if (targetType === 'color' || targetType === 'pattern') {
-            _obj.style.display = 'none';
-            let ctl = targetType === 'color' ? 'color-ctl' : 'image-ctl';
+            let ctl = targetType === 'color' ? 'color-ctl' : 'pattern-ctl';
             // 找到关联的控制框
-            currentColorCtl = this.findElementByClass(this.editorBox, ctl);
-
             this.compositeImage(
                 {
                     left: offsetLeft,
@@ -1831,19 +1943,24 @@ export default class IYWDesigner {
             )
             // 调用合成方法
             setTimeout(async() => {
-               await this.doComposite(imgInfo);
-            }, 500)
+                this.defaultSample.baseImgInfoList[this.currentBlade].bladeInfoList.forEach((item,index) => {
+                    this.doComposite(imgInfo,index,this.defaultSample.baseImgInfoList[this.currentBlade].bladeInfoList.length);
+                })
+            }, 100)
         }
 
         // 同步坐标和尺寸的时候要同时同步色块的操作框。
         if (targetType === 'color') {
-            currentColorCtl = Array.from(this.editorBox.childNodes).find(item => item.getAttribute('colorid') === colorId);
             // 找到要替换颜色的色块ID
             let targetId = this.onMoveObj.getAttribute('colorId');
             let type = this.onMoveObj.getAttribute('colortype')
             // 删除前要保存当前色块的信息
             _obj.style.zIndex = imgInfo.zIndex;
+            _obj.style.transform = imgInfo.transform;
             this.saveColorInfo(this.onMoveObj, type, targetId);
+        }
+        if(targetType === 'text'){
+                this.asyncText(_obj);
         }
         if (!currentColorCtl) return;
         // 这里的坐标都是取当前操作对象的坐标
@@ -1854,13 +1971,20 @@ export default class IYWDesigner {
         currentColorCtl.style.transform = transform;
         this.asyncPositionForFrame(this.onMoveObj, offsetLeft, offsetTop);
         this.selectedInfo.info = this.createObjInfo();
-
+        this.historyManage.add(this.onMoveObj);
     }
 
-    // 同步到合成的盒子
-    asyncToExportBox() {
-        const exportBox = this.exportObj;    // 找到导出效果图的盒子，并且取盒子的大小
-        const exportWidth = exportBox.offsetWidth;
+    asyncText(imgForPreview){
+        const newPos = this.getFitSizeByTarget(280);
+        imgForPreview.innerText = newPos.innerText;
+        imgForPreview.style.textAlign = newPos.textAlign;
+        imgForPreview.style.color = newPos.color;
+        imgForPreview.style.left = newPos.left;
+        imgForPreview.style.top = newPos.top;
+        imgForPreview.style.zIndex = newPos.zIndex;
+        imgForPreview.style.fontSize = newPos.fontSize;
+        imgForPreview.style.position = 'absolute';
+        this.loadingPreview.style.display = 'none';
     }
 
     // 如果没有选中的对象的时候显示画布的尺寸
@@ -1878,16 +2002,7 @@ export default class IYWDesigner {
 
     // 获取当前对象是色块还是图片
     getElementType() {
-        let type = ''
-        const id = this.onMoveObj.className === 'editImage';
-        const colorId = this.onMoveObj.getAttribute('colorId');
-        if (id) {
-            type = 'pattern';
-        }
-        if (colorId) {
-            type = 'color'
-        }
-        return type;
+        return this.onMoveObj.getAttribute('data-type');
     }
 
     // 通过自定义属性找元素、
@@ -1928,7 +2043,7 @@ export default class IYWDesigner {
         canvas.height = this.colorConfig.size;
         canvas.width = this.colorConfig.size;
         context.fillStyle = color;
-        if(colorType === 1) {
+        if(colorType == 1) {
             context.arc(this.colorConfig.size/2, this.colorConfig.size/2, this.colorConfig.size/2, 0, Math.PI*2, true);
             context.fill();
         } else {
@@ -1945,7 +2060,7 @@ export default class IYWDesigner {
         // 删除前要保存当前色块的信息
         this.saveColorInfo(this.onMoveObj, type, targetId);
         // 根据获取的ID获取到这个色块最后一次的尺寸和位置
-        let lastColor = this.colorConfig.data.find(item => item.colorId == targetId);
+        let lastColor = this.historyManage.find(this.onMoveObj);
         if(!lastColor){
             throw new Error('con not find colorId in function setColor. id:' + lastColor);
         }
@@ -1970,7 +2085,7 @@ export default class IYWDesigner {
         this.showLoading();
         // 如果是更换颜色需要沿用本身的type
         if(lastColor){
-            type = lastColor.type;
+            type = lastColor.colorType;
         }
         if (!this.defaultSample) {
             alert('请选择样版');
@@ -1991,7 +2106,7 @@ export default class IYWDesigner {
         }
         // 如果是更换颜色需要沿用本身的id
         if(lastColor){
-            _colorId = lastColor.colorId
+            _colorId = lastColor.id
         }
         // 如果有已经存在的ID，先删除掉
         this.colorIdExist();
@@ -2001,10 +2116,10 @@ export default class IYWDesigner {
 
         // 替换的颜色的时候要把这个色块最后保存的信息赋值给新的色块
         if(lastColor){
-            colorPiece.style.width =  lastColor.size.w + 'px';
-            colorPiece.style.height = lastColor.size.h + 'px';
-            colorPiece.style.left = lastColor.left;
-            colorPiece.style.top = lastColor.top;
+            colorPiece.style.width =  lastColor.width + 'px';
+            colorPiece.style.height = lastColor.width + 'px';
+            colorPiece.style.left = lastColor.left + 'px';
+            colorPiece.style.top = lastColor.top + 'px';
         }else{
             colorPiece.style.width =  this.colorConfig.size + 'px';
             colorPiece.style.height = this.colorConfig.size + 'px';
@@ -2029,10 +2144,10 @@ export default class IYWDesigner {
         });
 
         if(lastColor){
-            colorCtl.style.width =  lastColor.size.w + 'px';
-            colorCtl.style.height = lastColor.size.h + 'px';
-            colorCtl.style.left = lastColor.left;
-            colorCtl.style.top = lastColor.top;
+            colorPiece.style.width =  lastColor.width + 'px';
+            colorPiece.style.height = lastColor.width + 'px';
+            colorPiece.style.left = lastColor.left + 'px';
+            colorPiece.style.top = lastColor.top + 'px';
         }else{
             colorCtl.style.width = this.colorConfig.size + 'px';
             colorCtl.style.height = this.colorConfig.size + 'px';
@@ -2071,7 +2186,7 @@ export default class IYWDesigner {
             });
 
             // 图片控制器
-            const imageCtl = this.findElementByClass(this.editorBox, 'image-ctl');
+            const imageCtl = this.findElementByClass(this.editorBox, 'pattern-ctl');
             imageCtl && (imageCtl.style.display = state);
         }, 500)
     }
@@ -2090,7 +2205,46 @@ export default class IYWDesigner {
             top: colorPiece.offsetTop + 'px'
         })
     }
+    // 设置颜色
+    setTextColor(val){
+        this.onMoveObj.style.color = val;
+        const imageInfo = {};
+        this.displayPreview('text', imageInfo, this.previewBox);
+        this.displayPreview('text', imageInfo, this.exportObj);
+    }
+    // 设置文字对齐方式
+    setAlign(val){
+        this.onMoveObj.style.textAlign = val;
+        const imageInfo = {};
+        this.displayPreview('text', imageInfo, this.previewBox);
+        this.displayPreview('text', imageInfo, this.exportObj);
+    }
+    // 添加文字
+    addText(){
+        let elementForText = this.createElement({type:'div', className:'edit-text'});
+        elementForText.innerText = '请输入文字';
+        elementForText.contentEditable = 'true';
+        elementForText.style.left = 600 / 2 + 'px';
+        elementForText.style.top = 600 / 2 + 'px';
+        elementForText.style.zIndex = 600 / 2;
+        elementForText.setAttribute('textid', 1);
+        elementForText.setAttribute('data-type','text');
+        const imageInfo = {};
+        this.insertElement(this.elementsParent,elementForText);
 
+        // 添加完文字，在操作框同级插入隐藏的边框用于图层叠加选不中下一层用。
+        let textCtl = this.createElement({
+            type: 'div',
+            className: 'text-ctl',
+        });
+        textCtl.style.zIndex = '20';
+        textCtl.style.pointerEvents = 'auto';
+        textCtl.setAttribute('textid', 1);
+        this.onMoveObj = elementForText;
+        this.insertElement(this.editorBox, textCtl)
+        this.displayPreview('text', imageInfo, this.previewBox);
+        this.displayPreview('text', imageInfo, this.exportObj);
+    }
     // 添加图片
     addImage(imageInfo) {
         // 这里要处理一下，不然找不到src
@@ -2103,7 +2257,7 @@ export default class IYWDesigner {
             return;
         }
         this.showLoading();
-        this.designContents.bladeList[this.currentBlade].contents.images = imageInfo;
+        this.designContents.bladeList[this.currentBlade].contents.images = {...imageInfo};
         // 如果是第一次添加图案，需要生成img标签再插入到父节点，
         let currentImage = this.findElementByClass(this.elementsParent, 'editImage');
 
@@ -2115,6 +2269,8 @@ export default class IYWDesigner {
             this.image = currentImage;
             this.onMoveObj = currentImage;
             currentImage.draggable = false;
+            currentImage.setAttribute('patternid',1);
+            currentImage.setAttribute('data-type','pattern');
             currentImage.style.zIndex = 1;
             this.layers.push(currentImage.style.zIndex); // 保存起来作为管理层级用
         } else {
@@ -2122,18 +2278,19 @@ export default class IYWDesigner {
             currentImage.src = imageInfo.canvasImg || imageInfo.src;
             currentImage.style.width = '100%';
             currentImage.style.height = 'auto';
-            this.findElementByClass(this.editorBox, 'image-ctl').remove();
+            this.findElementByClass(this.editorBox, 'pattern-ctl').remove();
         }
         // 添加图片，在操作框同级插入隐藏的边框用于图层叠加选不中下一层用。
         let imageCtl = this.createElement({
             type: 'div',
-            className: 'image-ctl',
+            className: 'pattern-ctl',
         });
         imageCtl.style.width = currentImage.style.width;
         imageCtl.style.height = currentImage.style.height;
         imageCtl.style.zIndex = '12';
         imageCtl.style.pointerEvents = 'auto';
         imageCtl.setAttribute('el-type', 'ctl');
+        imageCtl.setAttribute('patternid', '1');
 
         // 这个方法用于色块和色块叠加的时候 选不中色块的特殊处理。
         imageCtl.addEventListener('mousedown', () => {
@@ -2150,9 +2307,7 @@ export default class IYWDesigner {
             this.displayPreview('pattern', imageInfo, this.exportObj);
             this.asyncPosition(this.previewBox);
         }
-
     }
-
     // 聚焦到点击的元素
     focusSelectedItem(obj) {
         if (obj.id === 'move') {
@@ -2169,6 +2324,7 @@ export default class IYWDesigner {
 
     // 创建当前对象的信息
     createObjInfo() {
+        console.log(this.getElementType(),'type')
         const {clientWidth, clientHeight, offsetLeft, offsetTop} = this.onMoveObj;
         const _this = this;
         const info = {
@@ -2228,7 +2384,7 @@ export default class IYWDesigner {
     getDesignSizeByPoints(index = 0,key='pathPoints') {
         let res = {newVersion: false, data: []};
         if (this.defaultSample) {
-            let currentPoints = this.blade.getCurrentBlade();
+            let currentPoints = this.blade.getCurrentBlade(this.currentBlade,index);
             if (currentPoints.pathPoints) { // 判断是不是新坐标标点的
                 res.newVersion = true;
                 res.data = JSON.parse(currentPoints[key]);
@@ -2305,6 +2461,7 @@ export default class IYWDesigner {
         const {clientWidth, clientHeight} = currentImage;
         this.frame.style.width = clientWidth - 4 + 'px'; // 这里减去的数值 是因为有一点点偏差
         this.frame.style.height = clientHeight - 2 + 'px';
+        this.frame.style.transform = currentImage.style.transform;
         this.showFrame();
         // 添加或者替换图片后，图片和操作框的位置都要恢复到默认
         this.resetFramePosition(left, top);
@@ -2312,7 +2469,6 @@ export default class IYWDesigner {
 
     // 渲染预览区域
     displayPreview(type, element, areaTarget) {
-        // console.log(element, '渲染预览区域')
         let previewImgContainer = this.searchNode(areaTarget, 'preview-container');
         // 先查找是否包含了preview-container
         if (!previewImgContainer) {
@@ -2329,52 +2485,47 @@ export default class IYWDesigner {
         }
         // 给预览区创建元素
         const createElementForPreview = (type) => {
-            let imgForPreview = this.createElement({type:  'img'});
+            let tagType = type === 'text' ? 'div' : 'img';
+            let imgForPreview = this.createElement({type:  tagType});
             // 设置自定义属性来区分图案和色块
             imgForPreview.setAttribute('imgType', type);
-
-            if (type === 'pattern') {
-                imgForPreview.src = element.canvasImg || element.src;
-                imgForPreview.draggable = false
-            }
-
             if (type === 'color') {
-                console.log(imgForPreview, 'imgForPreview')
-                imgForPreview.src = element.canvasImg || element.src;
-                imgForPreview.draggable = false
-                imgForPreview.className = 'color-preview'
-                imgForPreview.setAttribute('colorid', this.colorConfig.data[this.colorConfig.data.length - 1].colorId);
+                imgForPreview.className = 'color-preview';
             }
-
             if (type === 'sample') {
-                imgForPreview.src = element.canvasImg || element.src;
-                imgForPreview.draggable = false;
                 imgForPreview.style.zIndex = '20'; // 因为样板总是要在最上面一层
             }
-
+            if(type !== 'sample'){
+                imgForPreview.setAttribute(type+'id',this.onMoveObj.getAttribute(type+'id'));
+            }
+            if(type === 'text'){
+                 this.asyncText(imgForPreview);
+            }
+            imgForPreview.draggable = false
+            imgForPreview.src = element.canvasImg || element.src;
             this.insertElement(previewImgContainer, imgForPreview); // 在预览区域插入图片
         }
         switch (type) {
             case 'pattern':
                 // 插入图片需要先判断如果有图片直接替换图片路径即可，因为业务目前一个刀片只允许存在一张图片
-                let _pattern = findItemInPreview('pattern');
+                let _pattern = findItemInPreview(type);
                 if (_pattern) {
                     _pattern.src = element.canvasImg || element.src;
                 } else {
-                    createElementForPreview('pattern');
+                    createElementForPreview(type);
                 }
                 break;
             case 'sample':
-                let _sample = findItemInPreview('sample');
+                let _sample = findItemInPreview(type);
                 if (_sample) {
                     _sample.src = element.canvasImg || element.src;
                 } else {
-                    createElementForPreview('sample');
+                    createElementForPreview(type);
                 }
 
                 // 用于效果图的DIV
                 const exportElements = Array.from(this.findElementByClass(this.exportObj, 'preview-container').childNodes);
-                let exportSample = exportElements.find(item => item.getAttribute('imgType') == 'sample');
+                let exportSample = exportElements.find(item => item.getAttribute('imgType') == type);
                 if (exportSample) {
                     exportSample.src = element.canvasImg || element.src;
                 } else {
@@ -2382,7 +2533,10 @@ export default class IYWDesigner {
                 }
                 break;
             case 'color':
-                createElementForPreview('color');
+                createElementForPreview(type);
+                break;
+            case 'text':
+                createElementForPreview(type);
                 break;
         }
         // 更换图片后需要同步下尺寸和大小到 预览区
@@ -2533,14 +2687,39 @@ export default class IYWDesigner {
 
     // 导出效果图
     async exportImage() {
+        if(!domtoimage){
+            throw new Error('domtoimage is not installed!');
+        }
         if (!this.onMoveObj) return false;
-        let res = '';
         const nodeElement = this.findElementByClass(this.exportObj, 'preview-container');
-        // const nodeElement = document.getElementsByClassName('single-export-container')[0];
-        let dataUrl = await domtoimage.toPng(nodeElement);
-        return dataUrl;
+        let base64Img = await domtoimage.toPng(nodeElement,{
+            width: this.exportSize,
+            height: this.exportSize,
+        });
+        return base64Img
     }
+    // gen images for toolKit actions
+    genImgForAction(action){
+        // 找到合成单图的元素
+        let singleComposite = document.getElementById('compositeCan');
+        let singleCompBox = this.findElementByClass(singleComposite,'single-export-container');
+        let singleCompImg = this.findElementByClass(singleCompBox,'single-export');
 
+        // 找到预览区域的图获取SRC赋值给单图片合成
+        let previewImg = this.findItemByAttr(this.previewImgContainer, 'pattern');
+        singleCompImg.src = previewImg.src;
+        const transform = this.onMoveObj.style.transform;
+        console.log('gen images for toolKit actions',transform)
+        if(!transform) return;
+        // 找到最终导出效果的div
+        let exportDiv = this.findElementByClass(this.exportObj,'preview-container');
+        let exportImg = this.findItemByAttr(exportDiv, 'pattern');
+        exportImg.style.transform = transform;
+
+        // 把编辑区操后的旋转角度给合成单图的图片
+        previewImg.style.transform = transform;
+        singleCompImg.style.transform = transform;
+    }
     // 工具集合
     toolKit(key) {
         if (!this.onMoveObj) return
@@ -2552,7 +2731,7 @@ export default class IYWDesigner {
         let currentColorCtl = null;
         // 根据当前对象的类型来调整层级
         if (currentObjType === 'image') {
-            currentColorCtl = Array.from(this.editorBox.childNodes).find(item => item.className === 'image-ctl');
+            currentColorCtl = Array.from(this.editorBox.childNodes).find(item => item.className === 'pattern-ctl');
         }
         if (currentObjType === 'color') {
             currentColorCtl = Array.from(this.editorBox.childNodes).find(item => item.getAttribute('colorid') === currentObj.getAttribute('colorid'));
@@ -2615,11 +2794,23 @@ export default class IYWDesigner {
                 this.setImageToCenter(canvasWidth, currentObj.clientWidth, currentObj.clientHeight);
             },
             // 水平镜像
-            mirrorX: () => {
+            mirrorX: async () => {
                 currentObj.style.transform = currentObj.style.transform === 'rotateY(180deg)' ? 'rotateY(0deg)' : 'rotateY(180deg)';
+                currentObj.src = await domtoimage.toPng(currentObj,{
+                            quality: '1',
+                            width: this.canvasSize,
+                            height: this.canvasSize,
+                        });
+                currentObj.style.transform = '';
             },
-            mirrorY: () => {
+            mirrorY: async () => {
                 currentObj.style.transform = currentObj.style.transform === 'rotateX(180deg)' ? 'rotateX(0deg)' : 'rotateX(180deg)';
+                currentObj.src = await domtoimage.toPng(currentObj,{
+                    quality: '1',
+                    width: this.canvasSize,
+                    height: this.canvasSize,
+                });
+                currentObj.style.transform = '';
             },
             // 水平居中
             centerW: () => {
@@ -2659,6 +2850,7 @@ export default class IYWDesigner {
         }
         actions[key] && actions[key]();
         if (key !== 'exportImage') {
+            this.showLoading()
             this.asyncPosition(this.previewBox);
         }
         // this.asyncPosition(this.exportObj);
@@ -2729,7 +2921,8 @@ export default class IYWDesigner {
                 _this.colorConfig.data[currentIndex].top = y - _this.disY + "px";
             }
         } else {
-            let currentImageCtl = _this.findElementByClass(_this.editorBox, 'image-ctl');
+            let type = _this.getElementType();
+            let currentImageCtl = _this.findElementByClass(_this.editorBox, type+'-ctl');
             currentImageCtl.style.left = x - _this.disX + "px";
             currentImageCtl.style.top = y - _this.disY + "px";
         }
@@ -2822,10 +3015,4 @@ export default class IYWDesigner {
         // this.asyncPosition(this.previewBox);
     }
 
-    /**
-     *  @returns {Array} - 返回矩阵数组
-     */
-    getMatrix() {
-        return this.matrix;
-    }
 }

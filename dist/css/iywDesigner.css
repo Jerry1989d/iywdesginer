@@ -12,7 +12,7 @@ html, body, .container, #app{
     top: 0;
     user-select: none;
 }
-#editor .color-ctl, #editor .image-ctl{
+#editor .color-ctl, #editor .pattern-ctl{
     position: absolute;
     /*border: 1px solid #2fa8ec;*/
     left: 0;
@@ -42,6 +42,12 @@ html, body, .container, #app{
 #elementsParent img, #elementsParent div{
     width: 100%;
     position: absolute;
+}
+#elementsParent .edit-text{
+    position: absolute;
+    min-height: 20px;
+    padding: 2px;
+    font-size: 28px;
 }
 .editor-box .editor-ctrl{
     /*width: 600px;*/
@@ -192,9 +198,10 @@ html, body, .container, #app{
     height: 280px;
     position: absolute;
     right: 10px;
-    bottom: 10px;
+    top: 100px;
     border-radius: 4px;
     box-shadow: 0 0 10px #bbbbbb;
+    overflow: hidden;
 }
 #previewBox img, #element-for-export img{
     user-select: none;
@@ -218,12 +225,14 @@ html, body, .container, #app{
     position: absolute;
     left: 0;
     bottom: 0;
+    overflow: hidden;
 }
 #compositeCan .single-export-container{
     width: 100%;
     height: 100%;
     position: relative;
     display: block;
+    overflow: hidden;
 }
 #previewBox .preview-container,#element-for-export .preview-container {
     width: 100%;
@@ -304,6 +313,7 @@ html, body, .container, #app{
     background-color: white;
     width: 100%;
     height: 100%;
+    margin: 10px;
 }
 .loader {
     position: relative;

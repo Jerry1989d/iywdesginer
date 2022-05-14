@@ -1,6 +1,6 @@
 {
   "name": "iywdesigner",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "a image tool",
   "main": "index.js",
   "scripts": {
