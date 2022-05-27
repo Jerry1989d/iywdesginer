@@ -1,6 +1,6 @@
 {
   "name": "iywdesigner",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "a image tool",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Jerry1989d/iywdesginer.git"
+    "url": "git+https://github.com/Jerry1989d/iywdesigner.git"
   },
   "keywords": [
     "canvas",
@@ -18,7 +18,7 @@
   "author": "jerry",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Jerry1989d/iywdesginer/issues"
+    "url": "https://github.com/Jerry1989d/iywdesigner/issues"
   },
-  "homepage": "https://github.com/Jerry1989d/iywdesginer#readme"
+  "homepage": "https://github.com/Jerry1989d/iywdesigner#readme"
 }

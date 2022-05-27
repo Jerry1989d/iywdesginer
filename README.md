@@ -27,7 +27,7 @@ vue 环境安装只需要引入本Demo直接输如命令安装即可
 
 3D功能需要引入 [Three.js](https://github.com/mrdoob/three.js/)
 
-设计器包单独加载 
+设计器插件单独安装
 
 ````javascript
 
@@ -37,19 +37,19 @@ npm i iywdesigner
 
 引入用于合成的插件 
 ```html
-<script src="https://cdn.bootcss.com/dom-to-image/2.2.0/dom-to-image.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
 ```
 
 
 引入设计器插件
-```javascript
-<link  href="path/to/iywDesginer.css" rel="stylesheet">
-<script src="path/to/IYWDesigner.js"></script>
-```
 
+```javascript
+import IYWDesigner from "./IYWDesigner";
+```
 
 ### 设计器的调用
 1.在需要生成设计器的组件里首先要给一个父级容器，并且设置一个id
+2.设计器的默认定位是绝对定位，所以建议在editor-box外面添加一层相对定位的父级容器
 ```html
 <div class="editor-box" id="editor"></div>
 ```
@@ -66,7 +66,7 @@ npm i iywdesigner
           id:'editor',// 父级容器的ID
           previewBox:'previewBox', // 预览区域的ID
           selectedInfo:_this.selectedInfo, // 如果需要得到当前操作对象的信息则传
-          exportSize: 800 // 导出图的尺寸
+          exportSize: 800, // 导出图的尺寸
         },
     );
     this.editorObj.init(); // 初始化设计器
@@ -89,6 +89,8 @@ npm i iywdesigner
 ### maxItemNum
 * Type: ``Number``' 编辑器内包含图片和色块的最大数量，默认为6 
 
+### colorMax
+* Type: ``Number``' 色块的最大数量限制，默认为5
 
 ## Methods
 
@@ -132,7 +134,8 @@ const sampleInfo = {
       }
     ] 
 };
-editor.setTemp(sampleInfo)
+editor.blad.set(0); // 注意这里一定要设置
+editor.setTemp(sampleInfo);
 ```
 * name: ``String`` 样版的名称
 * id: ``Number`` 样版的id
@@ -161,6 +164,9 @@ editor.toolKit('layerUp');
   * fullCover: 铺满画布
   * clip: 对图像进行裁剪
   * zoomIn: 等比放大 
+  * repeat: 平铺循环 
+  * repeatX: 水平循环 
+  * repeatY: 垂直循环 
 
 
 ### clip(cropper,shape)
@@ -188,6 +194,7 @@ editorObj.blade.set(1).setTemp(sampleInfo);
 ```
 * Number : ``Number`` 刀片下标
 
+
 ### blade.get()
 返回当前刀片的索引
 ```javascript
@@ -202,3 +209,24 @@ editorObj.blade.get();
 editorObj.getPreviewDom();
 ```
 * return : ``String`` html dom
+
+
+### clearEditor()
+清空当前刀片的设计内容
+```javascript
+editorObj.clearPreview();
+```
+
+
+### nextStep()
+调用历史记录的下一步
+```javascript
+editorObj.nextStep();
+```
+
+### preStep()
+调用历史记录的上一步
+```javascript
+editorObj.preStep();
+```
+
